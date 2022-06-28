@@ -1,7 +1,6 @@
 CREATE SCHEMA IF NOT EXISTS sscholar AUTHORIZATION joe;
 
 SET default_tablespace = '';
-
 SET default_table_access_method = heap;
 
 CREATE TABLE sscholar.authors (
@@ -14,7 +13,7 @@ CREATE TABLE sscholar.authors (
 	papercount integer,
 	citationcount integer,
 	hindex integer,
-	updated timestamp without time zone
+	updated timestamp without time zone,
 	PRIMARY KEY (author_id)
 );
 
@@ -34,7 +33,7 @@ CREATE TABLE sscholar.abstracts (
 	openaccess_url text,
 	openaccess_status text,
 	abstract text,
-	updated timestamp without time zone
+	updated timestamp without time zone,
 	PRIMARY KEY (corpus_id)
 );
 
@@ -48,7 +47,7 @@ CREATE TABLE sscholar.citations (
 	is_influential boolean, -- sscholar evaluation of the "importance" of the citation to the citing corpus
 	contexts text[], -- Text surrounding the citation in the source paper's body
 	intents text[], -- Classification of the intent behind the citations.
-	updated timestamp without time zone
+	updated timestamp without time zone,
 	PRIMARY KEY (citation_id)
 );
 
@@ -78,7 +77,7 @@ CREATE TABLE sscholar.papers (
 	influentialcitationcount integer,
 	is_openaccess boolean,
 	s2fieldsofstudy text,
-	updated timestamp without time zone
+	updated timestamp without time zone,
 	PRIMARY KEY (corpus_id)
 );
 
@@ -96,7 +95,7 @@ IS 'provides core metadata about papers. For abstract or citation information jo
 CREATE TABLE IF NOT EXISTS  sscholar.tldrs (
 	corpus_id text NOT NULL,
 	model text,
-	summary text
+	summary text,
 	PRIMARY KEY (corpus_id)
 );
 
