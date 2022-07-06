@@ -594,4 +594,4 @@ if __name__ == '__main__':
     flatten_venues()
     flatten_institutions()
     flatten_authors()
-#    flatten_works()
+    flatten_works()
