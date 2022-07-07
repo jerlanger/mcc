@@ -15,7 +15,7 @@ Initialize Schema by running dbSchemas/openalex-pg-schema.sql
 
 Example
 ```bash
-psql -d openalex -f openalex-pg-schema.sql-d openalex -f openalex-pg-schema.sql
+psql -d db_name -f openalex-pg-schema.sql
 ```
 
 #### Step 2
@@ -46,7 +46,7 @@ it will take several hours and so it is *HIGHLY* recommended to nohup it.
 
 Example
 ```bash
-nohup psql -d openalex < copy-openalex-csv.sql &
+nohup psql -d db_name < copy-openalex-csv.sql &
 ```
 
 ## Semantic Scholar
@@ -55,7 +55,28 @@ nohup psql -d openalex < copy-openalex-csv.sql &
 
 Initialize Schema by running dbSchemas/semanticscholar-pg-schema.sql
 
-This is still a WIP
+Example
+```bash
+nohup psql -d db_name -f dbSchemas/semanticscholar-pg.schema.sql &
+```
+#### Step 2
+
+Combine downloaded files into jsonl files
+
+```bash
+cat * > table_name.jsonl
+```
+
+#### Step 3
+
+Load JSONL Files to DB
+
+Run loadData/copy-semanticscholar.sql to load jsonl files into the database. This will take several hours and
+so it is *HIGHLY* recommended to nohup it. The current iteration assumes jsonl are in location `/var/data/semanticscholar/local/data/json_outpus/`
+
+```bash
+nohup psql -d db_name -f loadData/copy-semanticscholar.sql &
+```
 
 ## Core
 
