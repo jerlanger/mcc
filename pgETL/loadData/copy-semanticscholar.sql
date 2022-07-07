@@ -1,11 +1,11 @@
 -- ## ABSTRACTS ## --
 
-CREATE TEMP TABLE s2_abstracts (
+CREATE TEMP TABLE tmp_abstracts (
     data jsonb
     );
 
-COPY s2_abstracts(data)
-FROM ‘/var/data/semanticscholar/local/data/json_outputs/abstracts.jsonl’
+COPY tmp_abstracts(data)
+FROM '/var/data/semanticscholar/local/data/json_outputs/abstracts.jsonl'
 csv quote e'\x01' delimiter e'\x02';
 
 WITH tmp as (
@@ -19,20 +19,30 @@ SELECT
 (data #>> '{openaccessinfo,url}')::text as open_access_url,
 data #> '{openaccessinfo,externalids}' as external_ids,
 (data ->> 'updated')::timestamp as updated_date
-FROM s2_abstracts
+FROM tmp_abstracts
 )
 
 INSERT INTO s2.abstracts SELECT * FROM tmp
-ON CONFLICT (corpus_id) DO UPDATE;
+ON CONFLICT (corpus_id) DO UPDATE SET
+    doi = EXCLUDED.doi,
+    mag_id = EXCLUDED.mag_id,
+    abstract = EXCLUDED.abstract,
+    open_access_status = EXCLUDED.open_access_status,
+    open_access_license = EXCLUDED.open_access_license,
+    open_access_url = EXCLUDED.open_access_url,
+    external_ids = EXCLUDED.external_ids,
+    updated_date = EXCLUDED.updated_date;
+
+DROP TABLE tmp_abstracts;
 
 -- ## AUTHORS ## --
 
-CREATE TEMP TABLE s2_authors (
+CREATE TEMP TABLE tmp_authors (
     data jsonb
 );
 
-COPY s2_authors(data)
-FROM ‘/var/data/semanticscholar/local/data/json_outputs/authors.jsonl’
+COPY tmp_authors(data)
+FROM '/var/data/semanticscholar/local/data/json_outputs/authors.jsonl'
 csv quote e'\x01' delimiter e'\x02';
 
 with tmp as (
@@ -48,22 +58,34 @@ with tmp as (
   (data ->> 'citationcount')::int as citation_count,
   (data ->> 'hindex')::int as hindex,
   (data ->> 'updated')::timestamp as updated_date
-  FROM jsons.s2_authors
+  FROM tmp_authors
 )
 
 INSERT INTO s2.authors SELECT * FROM tmp
-ON CONFLICT (author_id) DO UPDATE;
+ON CONFLICT (author_id) DO UPDATE SET
+    external_ids = EXCLUDED.external_ids,
+    name = EXCLUDED.name,
+    aliases = EXCLUDED.aliases,
+    url = EXCLUDED.url,
+    homepage = EXCLUDED.homepage,
+    affiliations = EXCLUDED.affiliations,
+    paper_count = EXCLUDED.paper_count,
+    citation_count = EXCLUDED.citation_count,
+    hindex = EXCLUDED.hindex,
+    updated_date = EXCLUDED.updated_date;
+
+DROP TABLE tmp_authors;
 
 -- ## CITATIONS ## --
 
 -- ## PAPERS ## --
 
-CREATE TEMP TABLE s2_papers (
+CREATE TEMP TABLE tmp_papers (
     data jsonb
     );
 
-COPY s2_papers(data)
-FROM ‘/var/data/semanticscholar/local/data/json_outputs/papers.jsonl’
+COPY tmp_papers(data)
+FROM '/var/data/semanticscholar/local/data/json_outputs/papers.jsonl'
 csv quote e'\x01' delimiter e'\x02';
 
 WITH tmp AS (SELECT
@@ -82,19 +104,35 @@ data -> 's2fieldsofstudy' as s2_fields_of_study,
 (data ->> 'referencecount')::int as reference_count,
 (data ->> 'influentialcitationcount')::int as influential_citation_count,
 (data ->> 'updated')::timestamp as updated_date
-FROM s2_papers)
+FROM tmp_papers)
 
-INSERT INTO sscholar.papers SELECT * FROM tmp
-ON CONFLICT (corpus_id) DO UPDATE;
+INSERT INTO s2.papers SELECT * FROM tmp
+ON CONFLICT (corpus_id) DO UPDATE SET
+    doi = EXCLUDED.doi,
+    mag_id = EXCLUDED.mag_id,
+    external_ids = EXCLUDED.external_ids,
+    title = EXCLUDED.title,
+    publication_year = EXCLUDED.publication_year,
+    publication_venue = EXCLUDED.publication_venue,
+    authors = EXCLUDED.authors,
+    is_open_access = EXCLUDED.is_open_access,
+    url = EXCLUDED.url,
+    s2_fields_of_study = EXCLUDED.s2_fields_of_study,
+    citation_count = EXCLUDED.citation_count,
+    reference_count = EXCLUDED.reference_count,
+    influential_citation_count = EXCLUDED.influential_citation_count,
+    updated_date = EXCLUDED.updated_date;
+
+DROP TABLE tmp_papers;
 
 -- ## S2ORC ## --
 
-CREATE TEMP TABLE s2_s2orc (
+CREATE TEMP TABLE tmp_s2orc (
     data jsonb
     );
 
-COPY s2_s2orc(data)
-FROM ‘/var/data/semanticscholar/local/data/json_outputs/s2orc.jsonl’
+COPY tmp_s2orc(data)
+FROM '/var/data/semanticscholar/local/data/json_outputs/s2orc.jsonl'
 csv quote e'\x01' delimiter e'\x02';
 
 with tmp as (SELECT
@@ -106,19 +144,28 @@ with tmp as (SELECT
 quote_nullable(data #>> '{content,text}')::text as full_text,
 (data #> '{content,annotations}') annotations,
 (data ->> 'updated')::timestamp updated_date
-FROM s2_s2orc)
+FROM tmp_s2orc)
 
 INSERT INTO s2.s2orc SELECT * FROM tmp
-ON CONFLICT (corpus_id) DO UPDATE;
+ON CONFLICT (corpus_id) DO UPDATE SET
+    doi = EXCLUDED.doi,
+    mag_id = EXCLUDED.mag_id,
+    external_ids = EXCLUDED.external_ids,
+    open_access_metadata = EXCLUDED.open_access_metadata,
+    full_text = EXCLUDED.full_text,
+    annotations = EXCLUDED.annotations,
+    updated_date = EXCLUDED.updated_date;
+
+DROP TABLE tmp_s2orc;
 
 -- ## TLDRS ## --
 
-CREATE TEMP TABLE s2_tldrs (
+CREATE TEMP TABLE tmp_tldrs (
     data jsonb
     );
 
-COPY s2_tldrs(data)
-FROM ‘/var/data/semanticscholar/local/data/json_outputs/tldrs.jsonl’
+COPY tmp_tldrs(data)
+FROM '/var/data/semanticscholar/local/data/json_outputs/tldrs.jsonl'
 csv quote e'\x01' delimiter e'\x02';
 
 with tmp as (
@@ -126,8 +173,12 @@ SELECT
 (data ->> 'corpusid')::text as corpus_id,
 (data ->> 'model')::text as model,
 (data ->> 'text')::text as summary
-FROM s2_tldrs
+FROM tmp_tldrs
 )
 
 INSERT INTO s2.tldrs SELECT * FROM tmp
-ON CONFLICT (corpus_id) DO UPDATE;
+ON CONFLICT (corpus_id) DO UPDATE SET
+    model = EXCLUDED.model,
+    summary = EXCLUDED.summary;
+
+DROP TABLE tmp_tldrs;
