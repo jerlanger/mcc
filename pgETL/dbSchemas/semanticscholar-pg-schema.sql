@@ -40,7 +40,7 @@ CREATE TABLE s2.abstracts (
 );
 
 -- todo: can i make an index for the abstract text?
-CREATE INDEX idx_abstracts_abstract ON s2.abstracts USING gin (abstract);
+CREATE INDEX idx_abstracts_abstract ON s2.abstracts USING gin (to_tsvector('english',abstract));
 
 COMMENT ON TABLE s2.abstracts
 IS 'provides abstract text for selected papers';
@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS s2.papers (
 
 CREATE INDEX paper_pubyear ON s2.papers(publication_year);
 CREATE INDEX paper_pubname ON s2.papers(publication_venue);
-CREATE INDEX idx_paper_papername ON s2.papers USING gin(title);
+CREATE INDEX idx_paper_papername ON s2.papers USING gin(to_tsvector('english',title));
 CREATE INDEX paper_doi ON s2.papers(doi);
 CREATE INDEX paper_mag ON s2.papers(mag_id);
 
