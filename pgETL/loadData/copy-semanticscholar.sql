@@ -1,3 +1,6 @@
+CREATE EXTENSION pg_trgm;
+CREATE EXTENSION btree_gin;
+
 -- ## ABSTRACTS ## --
 
 CREATE TEMP TABLE tmp_abstracts (
@@ -5,8 +8,10 @@ CREATE TEMP TABLE tmp_abstracts (
     );
 
 COPY tmp_abstracts(data)
-FROM '/var/data/semanticscholar/local/data/json_outputs/abstracts.jsonl'
+FROM '/var/data/semanticscholar/json_outputs/abstracts.jsonl'
 csv quote e'\x01' delimiter e'\x02';
+
+DROP INDEX idx_abstracts_abstract;
 
 WITH tmp as (
 SELECT
@@ -22,7 +27,7 @@ data #> '{openaccessinfo,externalids}' as external_ids,
 FROM tmp_abstracts
 )
 
-INSERT INTO s2.abstracts SELECT * FROM tmp
+INSERT INTO s2.abstracts SELECT DISTINCT ON (corpus_id) * FROM tmp
 ON CONFLICT (corpus_id) DO UPDATE SET
     doi = EXCLUDED.doi,
     mag_id = EXCLUDED.mag_id,
@@ -35,6 +40,8 @@ ON CONFLICT (corpus_id) DO UPDATE SET
 
 DROP TABLE tmp_abstracts;
 
+CREATE INDEX idx_abstracts_abstract ON s2.abstracts USING gin (to_tsvector('english',abstract));
+
 -- ## AUTHORS ## --
 
 CREATE TEMP TABLE tmp_authors (
@@ -42,8 +49,10 @@ CREATE TEMP TABLE tmp_authors (
 );
 
 COPY tmp_authors(data)
-FROM '/var/data/semanticscholar/local/data/json_outputs/authors.jsonl'
+FROM '/var/data/semanticscholar/json_outputs/authors.jsonl'
 csv quote e'\x01' delimiter e'\x02';
+
+DROP INDEX author_name;
 
 with tmp as (
   SELECT
@@ -61,7 +70,7 @@ with tmp as (
   FROM tmp_authors
 )
 
-INSERT INTO s2.authors SELECT * FROM tmp
+INSERT INTO s2.authors SELECT DISTINCT ON (author_id) * FROM tmp
 ON CONFLICT (author_id) DO UPDATE SET
     external_ids = EXCLUDED.external_ids,
     name = EXCLUDED.name,
@@ -76,6 +85,8 @@ ON CONFLICT (author_id) DO UPDATE SET
 
 DROP TABLE tmp_authors;
 
+CREATE INDEX author_name ON s2.authors(name);
+
 -- ## CITATIONS ## --
 
 -- ## PAPERS ## --
@@ -85,8 +96,14 @@ CREATE TEMP TABLE tmp_papers (
     );
 
 COPY tmp_papers(data)
-FROM '/var/data/semanticscholar/local/data/json_outputs/papers.jsonl'
+FROM '/var/data/semanticscholar/json_outputs/papers.jsonl'
 csv quote e'\x01' delimiter e'\x02';
+
+DROP INDEX paper_pubyear;
+DROP INDEX paper_pubname;
+DROP INDEX idx_paper_papername;
+DROP INDEX paper_doi;
+DROP INDEX paper_mag;
 
 WITH tmp AS (SELECT
 (data ->> 'corpusid')::text as corpus_id,
@@ -106,7 +123,7 @@ data -> 's2fieldsofstudy' as s2_fields_of_study,
 (data ->> 'updated')::timestamp as updated_date
 FROM tmp_papers)
 
-INSERT INTO s2.papers SELECT * FROM tmp
+INSERT INTO s2.papers SELECT DISTINCT ON (corpus_id) * FROM tmp
 ON CONFLICT (corpus_id) DO UPDATE SET
     doi = EXCLUDED.doi,
     mag_id = EXCLUDED.mag_id,
@@ -125,6 +142,12 @@ ON CONFLICT (corpus_id) DO UPDATE SET
 
 DROP TABLE tmp_papers;
 
+CREATE INDEX paper_pubyear ON s2.papers(publication_year);
+CREATE INDEX paper_pubname ON s2.papers(publication_venue);
+CREATE INDEX idx_paper_papername ON s2.papers USING gin(to_tsvector('english',title));
+CREATE INDEX paper_doi ON s2.papers(doi);
+CREATE INDEX paper_mag ON s2.papers(mag_id);
+
 -- ## S2ORC ## --
 
 CREATE TEMP TABLE tmp_s2orc (
@@ -132,7 +155,7 @@ CREATE TEMP TABLE tmp_s2orc (
     );
 
 COPY tmp_s2orc(data)
-FROM '/var/data/semanticscholar/local/data/json_outputs/s2orc.jsonl'
+FROM '/var/data/semanticscholar/json_outputs/s2orc.jsonl'
 csv quote e'\x01' delimiter e'\x02';
 
 with tmp as (SELECT
@@ -146,7 +169,7 @@ quote_nullable(data #>> '{content,text}')::text as full_text,
 (data ->> 'updated')::timestamp updated_date
 FROM tmp_s2orc)
 
-INSERT INTO s2.s2orc SELECT * FROM tmp
+INSERT INTO s2.s2orc SELECT DISTINCT ON (corpus_id) * FROM tmp
 ON CONFLICT (corpus_id) DO UPDATE SET
     doi = EXCLUDED.doi,
     mag_id = EXCLUDED.mag_id,
@@ -165,8 +188,10 @@ CREATE TEMP TABLE tmp_tldrs (
     );
 
 COPY tmp_tldrs(data)
-FROM '/var/data/semanticscholar/local/data/json_outputs/tldrs.jsonl'
+FROM '/var/data/semanticscholar/json_outputs/tldrs.jsonl'
 csv quote e'\x01' delimiter e'\x02';
+
+DROP INDEX idx_tldrs_summary;
 
 with tmp as (
 SELECT
@@ -176,9 +201,11 @@ SELECT
 FROM tmp_tldrs
 )
 
-INSERT INTO s2.tldrs SELECT * FROM tmp
+INSERT INTO s2.tldrs SELECT DISTINCT ON (corpus_id) * FROM tmp
 ON CONFLICT (corpus_id) DO UPDATE SET
     model = EXCLUDED.model,
     summary = EXCLUDED.summary;
 
 DROP TABLE tmp_tldrs;
+
+CREATE INDEX idx_tldrs_summary ON s2.tldrs USING gin (summary);

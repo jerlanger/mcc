@@ -14,13 +14,13 @@ do
 
         for JSONFILE in $SOURCEDIR$FOLDER/*/*/*.json;
         do
-          # Add provider ID field and remove fullText to create and save reduced json.
+          # Add provider ID field and remove fullText to create and save compacted json.
           jq --argjson provider "$(jo provider_id="$PROVIDER")" '. += $provider' < $JSONFILE |
-          jq 'del(.fullText)' >> $DOCS/docs.jsonl
+          jq -c 'del(.fullText)' >> $DOCS/documents.jsonl
 
-          # Create separate json with core_id and fullText
-          jq 'with_entries(select(.key | in({"coreId":1,"fullText":1})))' $JSONFILE \
-          >> $FULLTEXT/fulltext.jsonl
+          # Create separate json with core_id and fullText for relevant ids.
+          jq 'with_entries(select(.key | in({"coreId":1,"fullText":1})))' $JSONFILE |
+          jq -c 'select(.fullText != null)' >> $FULLTEXT/fulltext.jsonl
         done
 done
 
