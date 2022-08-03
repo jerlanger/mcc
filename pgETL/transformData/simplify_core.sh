@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SOURCEDIR=/Users/josepherlanger/Projects/mcc/pgETL/local/data_samples/core_sample_2/
-DESTDIR=/Users/josepherlanger/Projects/mcc/pgETL/local/data_samples/core_transform_2/
+DESTDIR=/Users/josepherlanger/Projects/mcc/pgETL/local/data_samples/core_compressed_output_old/
 
 for FOLDER in `ls -1 $SOURCEDIR`;
 do
@@ -23,5 +23,3 @@ do
           jq -c 'select(.fullText != null)' >> $FULLTEXT/fulltext.jsonl
         done
 done
-
-
