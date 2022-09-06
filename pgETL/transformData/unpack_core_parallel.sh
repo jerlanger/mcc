@@ -37,18 +37,18 @@ process_file() {
 
     tar -c -z -f "$DEST_FULLTEXT/fulltext_$PROVIDER.gz" -C $TMP_FULLTEXT .
     rm -r $TMP_DIR
-    #rm $FILE
+    rm $FILE
     echo "$PROVIDER finish"
 }
 
-ROOTPATH=/home/joe/repos/mcc/pgETL/local/
-#ROOT_PATH=/var/data/core/test/
+#ROOTPATH=/home/joe/repos/mcc/pgETL/local/
+ROOTPATH=/var/data/core/output/
 
 SOURCE_DIR="$ROOTPATH/core_output/"
 DEST_DIR="$ROOTPATH/output/"
 DEST_FULLTEXT="$DEST_DIR/fulltext/"
 
-max_num_processes=3
+max_num_processes=500
 limited_factor=1
 num_processes=$((max_num_processes/limited_factor))
 
