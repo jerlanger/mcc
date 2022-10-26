@@ -1,0 +1,7 @@
+TS= ("Carbon capture and Storage" OR "Carbon dioxide capture and Storage" OR "CO2 capture and storage" OR ("Carbon dioxide" OR CO2) NEAR/3("capture and sequestration"OR "recovery and sequestration") OR ((("CO2" OR "carbon") NEAR/3 (captur* OR stor* OR recover* OR extrac* ) )AND ("post combustion" OR scrub*))) 
+
+WHERE a.abstract @@ ((to_tsquery('carbon') || 
+			to_tsquery('carbon dioxide') || 
+			to_tsquery('co2')) 
+		<-> phraseto_tsquery('english','capture and storage'))
+		|| (
