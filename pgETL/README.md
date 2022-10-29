@@ -46,7 +46,7 @@ it will take several hours and so it is *HIGHLY* recommended to nohup it.
 
 Example
 ```bash
-nohup psql -d db_name < copy-openalex-csv.sql &
+nohup psql -d db_name < copy-openalex.sql &
 ```
 
 ## Semantic Scholar

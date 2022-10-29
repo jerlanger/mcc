@@ -21,8 +21,6 @@ CREATE TABLE s2.authors (
 	PRIMARY KEY (author_id)
 );
 
-CREATE INDEX author_name ON s2.authors(name);
-
 COMMENT ON TABLE s2.authors
 IS 'Provides summary information about authors';
 
@@ -39,9 +37,6 @@ CREATE TABLE s2.abstracts (
 	PRIMARY KEY (corpus_id)
 );
 
--- todo: can i make an index for the abstract text?
-CREATE INDEX idx_abstracts_abstract ON s2.abstracts USING gin (to_tsvector('english',abstract));
-
 COMMENT ON TABLE s2.abstracts
 IS 'provides abstract text for selected papers';
 
@@ -55,9 +50,6 @@ CREATE TABLE s2.citations (
 	updated_date timestamp without time zone,
 	PRIMARY KEY (citation_id)
 );
-
-CREATE INDEX citing_id ON s2.citations(citing_corpus_id);
-CREATE INDEX cited_id ON s2.citations(cited_corpus_id);
 
 COMMENT ON TABLE s2.citations
 IS 'provides details about the relationship between citing and cited corpus ids.';
@@ -81,17 +73,6 @@ CREATE TABLE IF NOT EXISTS s2.papers (
   PRIMARY KEY (corpus_id)
 );
 
-CREATE INDEX paper_pubyear ON s2.papers(publication_year);
-CREATE INDEX paper_pubname ON s2.papers(publication_venue);
-CREATE INDEX idx_paper_papername ON s2.papers USING gin(to_tsvector('english',title));
-CREATE INDEX paper_doi ON s2.papers(doi);
-CREATE INDEX paper_mag ON s2.papers(mag_id);
-
---todo: what is the most efficient indexing for jsonb arrays? jsonb_path_ops or default?
---todo: or should I do btree with author values? https://pganalyze.com/blog/gin-index
-
-CREATE INDEX idx_paper_authors ON s2.papers USING gin(authors jsonb_path_ops);
-
 COMMENT ON TABLE s2.papers
 IS 'provides core metadata about papers. For abstract or citation information join corpus_id on the relevant tables';
 
@@ -107,10 +88,8 @@ CREATE TABLE IF NOT EXISTS s2.s2orc (
     PRIMARY KEY (corpus_id)
     );
 
--- todo s2orc contains full-text-- need to investigate best way to incorporate for index because currently too long to index
--- todo table comment explainer
-
---CREATE INDEX idx_s2orc_fulltext ON s2.s2orc USING gin (full_text);
+COMMENT ON TABLE s2.s2orc
+IS 'Available full text contents for semantic scholar documents';
 
 CREATE TABLE IF NOT EXISTS  s2.tldrs (
 	corpus_id text NOT NULL,
@@ -118,8 +97,6 @@ CREATE TABLE IF NOT EXISTS  s2.tldrs (
 	summary text,
 	PRIMARY KEY (corpus_id)
 );
-
-CREATE INDEX idx_tldrs_summary ON s2.tldrs USING gin (summary);
 
 COMMENT ON TABLE s2.tldrs
 IS 'semantic scholar auto-generated natural-language summaries of paper content using SciTLDR model available at https://github.com/allenai/scitldr';

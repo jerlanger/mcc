@@ -32,9 +32,6 @@ CREATE TABLE IF NOT EXISTS openalex.authors (
     PRIMARY KEY (id)
 );
 
-CREATE INDEX author_name ON openalex.authors (display_name);
-CREATE INDEX last_institution ON openalex.authors (last_known_institution);
-
 COMMENT ON TABLE openalex.authors
 IS 'provides summary information about authors. linked to works via works_authorships';
 
@@ -80,9 +77,6 @@ CREATE TABLE IF NOT EXISTS openalex.concepts (
     PRIMARY KEY (id)
 );
 
-CREATE INDEX concept_name ON openalex.concepts (display_name);
-CREATE INDEX concept_level ON openalex.concepts (level);
-
 COMMENT ON TABLE openalex.concepts
 IS 'primary table for concepts. abstracted topics which are assigned to works and related hierarchically. for more modeling info please see https://github.com/ourresearch/openalex-concept-tagging';
 
@@ -91,8 +85,6 @@ CREATE TABLE IF NOT EXISTS openalex.concepts_ancestors (
     ancestor_id text,
     PRIMARY KEY (concept_id, ancestor_id)
 );
-
-CREATE INDEX concepts_ancestors_concept_id_idx ON openalex.concepts_ancestors USING btree (concept_id);
 
 COMMENT ON TABLE openalex.concepts_ancestors
 IS 'relationship table for concepts and their hierarchical ancestors';
@@ -129,9 +121,6 @@ CREATE TABLE IF NOT EXISTS openalex.concepts_related_concepts (
     PRIMARY KEY (concept_id, related_concept_id)
 );
 
-CREATE INDEX concepts_related_concepts_concept_id_idx ON openalex.concepts_related_concepts USING btree (concept_id);
-CREATE INDEX concepts_related_concepts_related_concept_id_idx ON openalex.concepts_related_concepts USING btree (related_concept_id);
-
 COMMENT ON TABLE openalex.concepts_related_concepts
 IS 'horizontal relationship between concepts';
 
@@ -154,10 +143,6 @@ CREATE TABLE IF NOT EXISTS openalex.institutions (
     updated_date timestamp without time zone,
     PRIMARY KEY (id)
 );
-
-CREATE INDEX institution_name ON openalex.institutions (display_name);
-CREATE INDEX institution_country ON openalex.institutions (country_code);
-CREATE INDEX institution_type ON openalex.institutions (type);
 
 COMMENT ON TABLE openalex.institutions
 IS 'institutions are organizations to which authors claim affiliations. linked to works via works_authorships.';
@@ -230,10 +215,6 @@ CREATE TABLE IF NOT EXISTS openalex.venues (
     PRIMARY KEY (id)
 );
 
-CREATE INDEX venue_issn ON openalex.venues (issn_l);
-CREATE INDEX venue_name ON openalex.venues (display_name);
-CREATE INDEX venue_publisher ON openalex.venues (publisher);
-
 COMMENT ON TABLE openalex.venues
 IS 'where works are hosted. information comes from crossref, issn network, and mag. linked to works via works_host_venue and works_alternate host venues.';
 
@@ -278,11 +259,6 @@ CREATE TABLE IF NOT EXISTS openalex.works (
     PRIMARY KEY (id)
 );
 
-CREATE INDEX works_title ON openalex.works (title);
-CREATE INDEX works_pubyear ON openalex.works (publication_year);
-CREATE INDEX works_type ON openalex.works (type);
-CREATE INDEX works_doi ON openalex.works (doi);
-
 COMMENT ON TABLE openalex.works
 IS 'documents like journal articles, books, datasets, and theses. sources include crossref, pubmed, institutional and discipline-specific repositories (eg, arxiv). older works come from the now-defunct microsoft academic graph. works are clustered together using fuzzy matching on publication date, title, and author list';
 
@@ -296,8 +272,6 @@ CREATE TABLE IF NOT EXISTS openalex.works_alternate_host_venues (
     PRIMARY KEY (work_id, venue_id)
 );
 
-CREATE INDEX works_alternate_host_venues_work_id_idx ON openalex.works_alternate_host_venues USING btree (work_id);
-
 COMMENT ON TABLE openalex.works_alternate_host_venues
 IS 'relationship table between works and secondary venues';
 
@@ -309,10 +283,6 @@ CREATE TABLE IF NOT EXISTS openalex.works_authorships (
     raw_affiliation_string text,
     PRIMARY KEY (work_id, author_id)
 );
-
-CREATE INDEX works_authorships_work_id ON openalex.works_authorships (work_id);
-CREATE INDEX works_position ON openalex.works_authorships (author_position);
-CREATE INDEX works_authorships_author_id ON openalex.works_authorships (author_id);
 
 COMMENT ON TABLE openalex.works_authorships
 IS 'relationship table between works and authors';
@@ -336,9 +306,6 @@ CREATE TABLE IF NOT EXISTS openalex.works_concepts (
     PRIMARY KEY (work_id, concept_id)
 );
 
-CREATE INDEX works_concepts_work_id ON openalex.works_concepts (work_id);
-CREATE INDEX works_concepts_concept_id ON openalex.works_concepts (concept_id);
-
 COMMENT ON TABLE openalex.works_concepts
 IS 'relationship table between works and concepts. for more information on concepts see comment on concepts table.';
 
@@ -351,9 +318,6 @@ CREATE TABLE IF NOT EXISTS openalex.works_host_venues (
     license text,
     PRIMARY KEY (work_id, venue_id)
 );
-
-CREATE INDEX works_host_venues_work_id_idx ON openalex.works_host_venues USING btree (work_id);
-CREATE INDEX works_host_venues_venue_id ON openalex.works_host_venues (venue_id);
 
 COMMENT ON TABLE openalex.works_host_venues
 IS 'relationship table between works and primary venue';
@@ -402,9 +366,6 @@ CREATE TABLE IF NOT EXISTS openalex.works_referenced_works (
     PRIMARY KEY (work_id, referenced_work_id)
 );
 
-CREATE INDEX works_referenced_works_work_id ON openalex.works_referenced_works (work_id);
-CREATE INDEX works_referenced_Works_referenced_id ON openalex.works_referenced_works (referenced_work_id);
-
 COMMENT ON TABLE openalex.works_referenced_works
 IS 'relationship table between works and other works it references';
 
@@ -413,9 +374,6 @@ CREATE TABLE IF NOT EXISTS openalex.works_related_works (
     related_work_id text,
     PRIMARY KEY (work_id, related_work_id)
 );
-
-CREATE INDEX works_related_works_work_id ON openalex.works_related_works (work_id);
-CREATE INDEX works_related_works_related_id ON openalex.works_related_works (related_work_id);
 
 COMMENT ON TABLE openalex.works_related_works
 IS 'relationship table for related works. computed algorithmically; the algorithm finds recent papers with the most concepts in common with the work_id';
