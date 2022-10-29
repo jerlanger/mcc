@@ -1,6 +1,5 @@
 #!/bin/bash
 
-#ROOTPATH=/Users/josepherlanger/Projects/mcc/pgETL/local/data_samples/
 ROOTPATH=/var/data/core/output/
 
 SOURCEDIR=$ROOTPATH"core_output/"

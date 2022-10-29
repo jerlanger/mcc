@@ -377,3 +377,14 @@ CREATE TABLE IF NOT EXISTS openalex.works_related_works (
 
 COMMENT ON TABLE openalex.works_related_works
 IS 'relationship table for related works. computed algorithmically; the algorithm finds recent papers with the most concepts in common with the work_id';
+
+CREATE TABLE IF NOT EXISTS openalex.abstracts (
+    id text,
+    doi text,
+    abstract text,
+    ts_abstract tsvector,
+    PRIMARY KEY (id)
+    );
+
+COMMENT ON TABLE openalex.abstracts
+IS 'Generated abstracts table from abstract_inverted_index column in openalex.works.'''

@@ -41,7 +41,6 @@ process_file() {
     echo "$PROVIDER finish"
 }
 
-#ROOTPATH=/home/joe/repos/mcc/pgETL/local/
 ROOTPATH=/var/data/core/output/
 
 SOURCE_DIR="$ROOTPATH/core_output/"
