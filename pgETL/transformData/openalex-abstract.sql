@@ -1,3 +1,10 @@
+CREATE TABLE IF NOT EXISTS openalex.abstracts (
+    id text,
+    doi text,
+    abstract text,
+    ts_abstract tsvector,
+    PRIMARY KEY (id)
+);
 
 WITH upd AS (
     SELECT
@@ -14,5 +21,5 @@ WITH upd AS (
 INSERT INTO openalex.abstracts SELECT * FROM upd
 ON CONFLICT (id) DO NOTHING;
 
-CREATE INDEX IF NOT EXISTS idx_oa_abstracts_tsv AS gin (ts_abstract);
-CREATE INDEX IF NOT EXISTS idx_oa_abstracts_doi AS btree (doi);
+CREATE INDEX IF NOT EXISTS idx_oa_abstracts_tsv ON openalex.abstracts USING gin (ts_abstract);
+CREATE INDEX IF NOT EXISTS idx_oa_abstracts_doi ON openalex.abstracts USING btree (doi);
