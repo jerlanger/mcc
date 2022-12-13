@@ -1,6 +1,3 @@
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
-CREATE EXTENSION IF NOT EXISTS btree_gin;
-
 CREATE SCHEMA IF NOT EXISTS core AUTHORIZATION joe;
 
 CREATE TEMP TABLE tmp_core (
@@ -21,33 +18,47 @@ SELECT
 data -> 'identifiers' as identifiers,
 (data ->> 'title')::text as title,
 (data ->> 'abstract')::text as abstract,
+(data -> 'language') as work_language,
+(data ->> 'fullTextIdentifier' is not null)::bool full_text_available,
 data -> 'authors' as authors,
-(data ->> 'provider_id')::text as provider_id,
+data -> 'contributors' as contributors,
 (data ->> 'publisher')::text as publisher,
 data -> 'journals' as publisher_journals,
-(data ->> 'year')::int as publishing_year,
-(data ->> 'datePublished') as publish_date, --todo: dates seem to be malformed in the sample, how do i handle
-(data ->> 'language')::text as document_language, -- todo: can i use this for dynamic index?
-data -> 'topics' as document_topics,
-data -> 'subjects' as document_evaluation,
-data -> 'urls' as document_urls,
-data -> 'contributors' as contributors,
-(data ->> 'fullTextIdentifier' is not null)::bool has_full_text,
-(data ->> 'fullTextIdentifier' as)::text full_text_identifier,
-data -> 'enrichments' as enrichments,
-data -> 'relations' as relations
-FROM jsons.core_docs)
+(data ->> 'provider_id')::text as provider_id,
+(data ->> 'year')::int as publication_year,
+(data ->> 'datePublished')::text as publication_date,
+data -> 'topics' as work_topics,
+data -> 'subjects' as work_evaluation,
+data -> 'enrichments' as work_enrichments,
+data -> 'relations' as work_relations,
+data -> 'urls' as work_urls,
+(data ->> 'fullTextIdentifier')::text full_text_url
+FROM tmp_core)
 
-/*
-INSERT INTO s2.abstracts SELECT DISTINCT ON (corpus_id) * FROM tmp
-ON CONFLICT (corpus_id) DO UPDATE SET
+INSERT INTO core.works SELECT DISTINCT ON (core_id) * FROM tmp
+ON CONFLICT (core_id) DO UPDATE SET
     doi = EXCLUDED.doi,
     mag_id = EXCLUDED.mag_id,
+    issn = EXCLUDED.issn,
+    oai = EXCLUDED.oai,
+    identifiers = EXCLUDED.identifiers,
+    title = EXCLUDED.title,
     abstract = EXCLUDED.abstract,
-    open_access_status = EXCLUDED.open_access_status,
-    open_access_license = EXCLUDED.open_access_license,
-    open_access_url = EXCLUDED.open_access_url,
-    external_ids = EXCLUDED.external_ids,
-    updated_date = EXCLUDED.updated_date;
+    work_language = EXCLUDED.work_language,
+    full_text_available = EXCLUDED.full_text_available,
+    authors = EXCLUDED.authors,
+    contributors = EXCLUDED.contributors,
+    publisher = EXCLUDED.publisher,
+    publisher_journals = EXCLUDED.publisher_journals,
+    provider_id = EXCLUDED.provider_id,
+    publication_year = EXCLUDED.publication_year,
+    publication_date = EXCLUDED.publication_date,
+    work_topics = EXCLUDED.work_topics,
+    work_evaluation = EXCLUDED.work_evaluation,
+    work_enrichments = EXCLUDED.work_enrichments,
+    work_relations = EXCLUDED.work_relations,
+    work_urls = EXCLUDED.work_urls,
+    full_text_url = EXCLUDED.full_text_url
+    ;
 
-DROP TABLE tmp_abstracts;*/
+DROP TABLE tmp_core;
