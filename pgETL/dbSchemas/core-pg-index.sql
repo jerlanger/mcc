@@ -7,8 +7,8 @@ CREATE INDEX IF NOT EXISTS idx_core_works_issn ON core.works USING btree (issn);
 CREATE INDEX IF NOT EXISTS idx_core_works_oai ON core.works USING btree (oai);
 
 CREATE INDEX IF NOT EXISTS idx_core_works_title ON core.works USING btree (title);
-CREATE INDEX IF NOT EXISTS idx_core_works_title_tsv ON core.works USING gin (to_tsvector('english',title));
-CREATE INDEX IF NOT EXISTS idx_core_works_abstract_tsv ON core.works (abstract) USING gin (to_tsvector('english',abstract));
+CREATE INDEX IF NOT EXISTS idx_core_works_title_tsv ON core.works USING GIN (to_tsvector('english',title));
+CREATE INDEX IF NOT EXISTS idx_core_works_abstract_tsv ON core.works USING GIN (to_tsvector('english',abstract));
 
 CREATE INDEX IF NOT EXISTS idx_core_works_authors ON core.works USING GIN (authors);
 CREATE INDEX IF NOT EXISTS idx_core_works_publisher ON core.works USING btree (publisher);
