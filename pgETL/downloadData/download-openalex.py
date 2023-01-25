@@ -10,7 +10,7 @@ class OpenAlex:
     def __init__(self):
         self.s3_client = boto3.client('s3')
         self.bucket = "openalex"
-        self.root_save_path = conf.links.server_root
+        self.root_save_path = f"{conf.links.local_root}/openalex/"
 
     def read_s3_contents(self, prefix):
 
@@ -22,7 +22,6 @@ class OpenAlex:
 
         bucket = self.bucket
         keys = []
-        dirs = []
         next_token = ''
         base_kwargs = {
             'Bucket': bucket,
@@ -31,16 +30,18 @@ class OpenAlex:
 
         while next_token is not None:
             kwargs = base_kwargs.copy()
+
             if next_token != '':
                 kwargs.update({'ContinuationToken': next_token})
+
             results = self.s3_client.list_objects_v2(**kwargs)
             contents = results.get('Contents')
+
             for i in contents:
                 k = i.get('Key')
                 if (k[-1] != '/') & (bool(re.search("\/manifest$", k))):
                     keys.append(k)
-                else:
-                    dirs.append(k)
+
             next_token = results.get('NextContinuationToken')
 
         return [json.loads(self.read_s3_contents(prefix=k).decode("UTF-8")) for k in keys]
@@ -66,6 +67,6 @@ class OpenAlex:
 
             if not os.path.isfile(loc):
                 print(f"downloading: {key}...")
-                self.s3_client.download_file(self.bucket, key, loc)
+                #self.s3_client.download_file(self.bucket, key, loc)
             else:
                 print(f"pass: {key}...")
