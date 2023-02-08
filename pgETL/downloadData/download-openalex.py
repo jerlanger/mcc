@@ -13,13 +13,11 @@ class OpenAlex:
         self.root_save_path = f"{conf.links.local_root}/openalex/"
 
     def read_s3_contents(self, prefix):
-
         bucket = self.bucket
         response = self.s3_client.get_object(Bucket=bucket, Key=prefix)
         return response['Body'].read()
 
     def get_manifest(self,  prefix):
-
         bucket = self.bucket
         keys = []
         next_token = ''
@@ -51,7 +49,6 @@ class OpenAlex:
         return [row["url"] for item in manifest for row in item["entries"]]
 
     def get_full_dataset(self, manifest=None):
-
         path = re.compile(f"s3://{self.bucket}/(.+)")
 
         if manifest is None:
@@ -67,6 +64,6 @@ class OpenAlex:
 
             if not os.path.isfile(loc):
                 print(f"downloading: {key}...")
-                #self.s3_client.download_file(self.bucket, key, loc)
+                self.s3_client.download_file(self.bucket, key, loc)
             else:
                 print(f"pass: {key}...")
