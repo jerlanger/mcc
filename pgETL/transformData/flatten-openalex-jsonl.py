@@ -173,21 +173,19 @@ def strip_id(src):
 
 
 def build_abstract(src):
+
     word_index = []
-    abstract = []
 
     for k, v in eval(src).items():
         if k == chr(34):
-            k = k+k
+            k = k + k
         for index in v:
             word_index.append([k, index])
 
     word_index = sorted(word_index, key=lambda x: x[1])
+    abstract = ' '.join([val[0] for val in word_index])
 
-    for count, val in enumerate(word_index, start=0):
-        abstract.append(val[0])
-
-    return ' '.join(abstract)
+    return abstract
 
 
 def flatten_concepts():
@@ -495,7 +493,6 @@ def flatten_works():
 
                     # works
                     if (abstract := work.get('abstract_inverted_index')) is not None:
-                        #work['abstract_inverted_index'] = json.dumps(abstract)
                         work['abstract'] = build_abstract(json.dumps(abstract))
 
                     work["mag"] = work.get('ids').get('mag')
