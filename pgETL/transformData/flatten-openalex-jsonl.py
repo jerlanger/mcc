@@ -4,8 +4,8 @@ import gzip
 import json
 import os
 
-SNAPSHOT_DIR = '/Users/josepherlanger/Projects/mcc/local'
-CSV_DIR = '/Users/josepherlanger/Projects/mcc/local/csv-files'
+SNAPSHOT_DIR = '/var/data/openalex'
+CSV_DIR = '/var/data/openalex/csv-files-r'
 
 FILES_PER_ENTITY = int(os.environ.get('OPENALEX_DEMO_FILES_PER_ENTITY', '0'))
 
@@ -15,7 +15,7 @@ csv_files = {
             'name': os.path.join(CSV_DIR, 'institutions.csv.gz'),
             'columns': [
                 'id', 'ror', 'display_name', 'type', 'country_code', 'homepage_url', 'image_url', 'image_thumbnail_url',
-                'display_name_acroynyms', 'display_name_alternatives', 'works_count', 'cited_by_count', 'works_api_url',
+                'display_name_acroynyms', 'display_name_alternatives', 'works_count', 'cited_by_count',
                 'updated_date'
             ]
         },
@@ -70,8 +70,7 @@ csv_files = {
         'concepts': {
             'name': os.path.join(CSV_DIR, 'concepts.csv.gz'),
             'columns': [
-                'id', 'wikidata', 'display_name', 'level', 'description', 'works_count', 'cited_by_count', 'image_url',
-                'image_thumbnail_url', 'works_api_url', 'updated_date'
+                'id', 'wikidata', 'display_name', 'level', 'description', 'works_count', 'cited_by_count', 'updated_date'
             ]
         },
         'ancestors': {
@@ -96,7 +95,7 @@ csv_files = {
             'name': os.path.join(CSV_DIR, 'venues.csv.gz'),
             'columns': [
                 'id', 'issn_l', 'issn', 'display_name', 'publisher', 'works_count', 'cited_by_count', 'is_oa',
-                'is_in_doaj', 'homepage_url', 'works_api_url', 'updated_date'
+                'is_in_doaj', 'homepage_url', 'updated_date'
             ]
         },
         'ids': {
@@ -113,7 +112,7 @@ csv_files = {
             'name': os.path.join(CSV_DIR, 'works.csv.gz'),
             'columns': [
                 'id', 'doi', 'mag', 'pmid', 'pmcid', 'title', 'publication_year', 'publication_date', 'type', 'cited_by_count',
-                'is_retracted', 'is_paratext', 'open_access', 'abstract'
+                'is_retracted', 'is_paratext', 'is_open_access', 'abstract'
             ]
         },
         'host_venues': {
@@ -158,18 +157,23 @@ csv_files = {
                 'work_id', 'referenced_work_id'
             ]
         },
-        'related_works': {
-            'name': os.path.join(CSV_DIR, 'works_related_works.csv.gz'),
+        'open_access': {
+            'name': os.path.join(CSV_DIR, 'works_open_access.csv.gz'),
             'columns': [
-                'work_id', 'related_work_id'
+                'work_id', 'oa_status', 'oa_url'
             ]
-        },
+        }
     },
 }
 
 
 def strip_id(src):
-    return src["id"].removeprefix("https://openalex.org/")
+    if src.get('id'):
+        id = src.get('id')
+    else:
+        id = src
+
+    return id.removeprefix("https://openalex.org/")
 
 
 def build_abstract(src):
@@ -178,12 +182,12 @@ def build_abstract(src):
 
     for k, v in eval(src).items():
         if k == chr(34):
-            k = k + k
+            k = "\\"+k
         for index in v:
             word_index.append([k, index])
 
     word_index = sorted(word_index, key=lambda x: x[1])
-    abstract = ' '.join([val[0] for val in word_index])
+    abstract = ' '.join([val[0] for val in word_index]).encode('utf-8', 'replace').decode()
 
     return abstract
 
@@ -240,7 +244,8 @@ def flatten_concepts():
 
                     if ancestors := concept.get('ancestors'):
                         for ancestor in ancestors:
-                            if ancestor_id := ancestor.get('id'):
+                            if ancestor.get('id'):
+                                ancestor_id = strip_id(ancestor)
                                 ancestors_writer.writerow({
                                     'concept_id': concept_id,
                                     'ancestor_id': ancestor_id
@@ -253,7 +258,8 @@ def flatten_concepts():
 
                     if related_concepts := concept.get('related_concepts'):
                         for related_concept in related_concepts:
-                            if related_concept_id := related_concept.get('id'):
+                            if related_concept.get('id'):
+                                related_concept_id = strip_id(related_concept)
                                 related_concepts_writer.writerow({
                                     'concept_id': concept_id,
                                     'related_concept_id': related_concept_id,
@@ -303,9 +309,14 @@ def flatten_venues():
                     venues_writer.writerow(venue)
 
                     if venue_ids := venue.get('ids'):
-                        venue_ids['venue_id'] = venue_id
                         venue_ids['issn'] = json.dumps(venue_ids.get('issn'))
-                        ids_writer.writerow(venue_ids)
+                        ids_writer.writerow({
+                            'venue_id': venue_id,
+                            'openalex': venue_ids.get("openalex"),
+                            'issn_l': venue_ids.get("issn_l"),
+                            'issn': venue_ids.get("issn"),
+                            'mag': venue_ids.get("mag")
+                        })
 
                     if counts_by_year := venue.get('counts_by_year'):
                         for count_by_year in counts_by_year:
@@ -358,7 +369,7 @@ def flatten_institutions():
                     institution = json.loads(institution_json)
                     institution["id"] = strip_id(institution)
 
-                    if not (institution_id := strip_id(institution)) or institution_id in seen_institution_ids:
+                    if not (institution_id := institution.get('id')) or institution_id in seen_institution_ids:
                         continue
 
                     seen_institution_ids.add(institution_id)
@@ -383,7 +394,8 @@ def flatten_institutions():
                         'associated_institutions', institution.get('associated_insitutions')  # typo in api
                     ):
                         for associated_institution in associated_institutions:
-                            if associated_institution_id := associated_institution.get('id'):
+                            if associated_institution.get('id'):
+                                associated_institution_id = strip_id(associated_institution)
                                 associated_institutions_writer.writerow({
                                     'institution_id': institution_id,
                                     'associated_institution_id': associated_institution_id,
@@ -465,7 +477,7 @@ def flatten_works():
             gzip.open(file_spec['concepts']['name'], 'wt', encoding='utf-8') as concepts_csv, \
             gzip.open(file_spec['mesh']['name'], 'wt', encoding='utf-8') as mesh_csv, \
             gzip.open(file_spec['referenced_works']['name'], 'wt', encoding='utf-8') as referenced_works_csv, \
-            gzip.open(file_spec['related_works']['name'], 'wt', encoding='utf-8') as related_works_csv:
+            gzip.open(file_spec['open_access']['name'], 'wt', encoding='utf-8') as open_access_csv:
 
         works_writer = init_dict_writer(works_csv, file_spec['works'], extrasaction='ignore')
         host_venues_writer = init_dict_writer(host_venues_csv, file_spec['host_venues'])
@@ -475,7 +487,7 @@ def flatten_works():
         concepts_writer = init_dict_writer(concepts_csv, file_spec['concepts'])
         mesh_writer = init_dict_writer(mesh_csv, file_spec['mesh'])
         referenced_works_writer = init_dict_writer(referenced_works_csv, file_spec['referenced_works'])
-        related_works_writer = init_dict_writer(related_works_csv, file_spec['related_works'])
+        open_access_writer = init_dict_writer(open_access_csv, file_spec['open_access'])
 
         files_done = 0
         for jsonl_file_name in glob.glob(os.path.join(SNAPSHOT_DIR, 'data', 'works', '*', '*.gz')):
@@ -498,12 +510,14 @@ def flatten_works():
                     work["mag"] = work.get('ids').get('mag')
                     work["pmid"] = work.get('ids').get('pmid')
                     work["pmcid"] = work.get('ids').get('pmcid')
+                    work["is_open_access"] = work.get('open_access').get('is_oa')
 
                     works_writer.writerow(work)
 
                     # host_venues
-                    if host_venue := (work.get('host_venue') or {}):
-                        if host_venue_id := host_venue.get('id'):
+                    if host_venue := (work.get('primary_location') or work.get('host_venue') or {}):
+                        if host_venue.get('id'):
+                            host_venue_id = strip_id(host_venue)
                             host_venues_writer.writerow({
                                 'work_id': work_id,
                                 'venue_id': host_venue_id,
@@ -513,10 +527,18 @@ def flatten_works():
                                 'license': host_venue.get('license'),
                             })
 
+                    if open_access := work.get('open_access'):
+                        open_access_writer.writerow({
+                            'work_id': work_id,
+                            'oa_status': open_access.get('oa_status'),
+                            'oa_url': open_access.get('oa_url'),
+                        })
+
                     # alternate_host_venues
                     if alternate_host_venues := work.get('alternate_host_venues'):
                         for alternate_host_venue in alternate_host_venues:
-                            if venue_id := alternate_host_venue.get('id'):
+                            if alternate_host_venue.get('id'):
+                                venue_id = strip_id(alternate_host_venue)
                                 alternate_host_venues_writer.writerow({
                                     'work_id': work_id,
                                     'venue_id': venue_id,
@@ -551,7 +573,8 @@ def flatten_works():
 
                     # concepts
                     for concept in work.get('concepts'):
-                        if concept_id := concept.get('id'):
+                        if concept.get('id'):
+                            concept_id = strip_id(concept)
                             concepts_writer.writerow({
                                 'work_id': work_id,
                                 'concept_id': concept_id,
@@ -568,15 +591,7 @@ def flatten_works():
                         if referenced_work:
                             referenced_works_writer.writerow({
                                 'work_id': work_id,
-                                'referenced_work_id': referenced_work
-                            })
-
-                    # related_works
-                    for related_work in work.get('related_works'):
-                        if related_work:
-                            related_works_writer.writerow({
-                                'work_id': work_id,
-                                'related_work_id': related_work
+                                'referenced_work_id': strip_id(referenced_work)
                             })
 
             files_done += 1
@@ -596,8 +611,8 @@ if __name__ == '__main__':
     if not os.path.isdir(CSV_DIR):
         os.mkdir(CSV_DIR)
 
-#    flatten_concepts()
-#    flatten_venues()
-#    flatten_institutions()
-#    flatten_authors()
+    flatten_concepts()
+    flatten_venues()
+    flatten_institutions()
+    flatten_authors()
     flatten_works()
