@@ -8,19 +8,19 @@ PREPARE nodes(text) AS
                 )
     FROM (
 	    SELECT a.title
-	    FROM openalex.works_filtered a
+	    FROM openalex.works a
 	    WHERE a.id = $1
 	    UNION
 	    SELECT b.title
 	    FROM openalex.works_referenced_works a
-	    JOIN openalex.works_filtered b
+	    JOIN openalex.works b
 	    ON a.referenced_work_id = b.id
 	    WHERE a.work_id = $1
 	    ) t;
 
 PREPARE links(text) AS
 
-SELECT json_build_object('links',
+    SELECT json_build_object('links',
             json_agg(
                 json_build_object('source',t.source,'target',t.target,'value',t.val)
                 )
@@ -28,10 +28,10 @@ SELECT json_build_object('links',
     FROM (
     	SELECT
     	a.title as "source", c.title as "target", SUM(1) as "val"
-    	FROM openalex.works_filtered a
+    	FROM openalex.works a
     	LEFT JOIN openalex.works_referenced_works b
     	ON a.id = b.work_id
-    	LEFT JOIN openalex.works_filtered c
+    	LEFT JOIN openalex.works c
     	ON b.referenced_work_id = c.id
     	WHERE a.id = $1
     	GROUP BY 1,2
